@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  # Base de Datos de Autenticación
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: postgres-auth
+    environment:
+      POSTGRES_DB: db_buyio_auth
+      POSTGRES_USER: buyio_user
+      POSTGRES_PASSWORD: buyio_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+
+  # Base de Datos de Catálogos
+  postgres-catalog:
+    image: postgres:16-alpine
+    container_name: postgres-catalog
+    environment:
+      POSTGRES_DB: db_buyio_catalog
+      POSTGRES_USER: buyio_user
+      POSTGRES_PASSWORD: buyio_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - catalog_db_data:/var/lib/postgresql/data
+
+  # Base de Datos de Órdenes
+  postgres-order:
+    image: postgres:16-alpine
+    container_name: postgres-order
+    environment:
+      POSTGRES_DB: db_buyio_order
+      POSTGRES_USER: buyio_user
+      POSTGRES_PASSWORD: buyio_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+
+  # Base de Datos de Auditoría
+  postgres-audit:
+    image: postgres:16-alpine
+    container_name: postgres-audit
+    environment:
+      POSTGRES_DB: db_buyio_audit
+      POSTGRES_USER: buyio_user
+      POSTGRES_PASSWORD: buyio_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - audit_db_data:/var/lib/postgresql/data
+
+  # Messaging - Kafka Cluster
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # Backend Services
+  buyio-auth-service:
+    build: ../buyio-auth-service
+    container_name: buyio-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/db_buyio_auth
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - postgres-auth
+      - kafka
+
+  buyio-catalog-service:
+    build: ../buyio-catalog-service
+    container_name: buyio-catalog-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-catalog:5432/db_buyio_catalog
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - postgres-catalog
+      - kafka
+
+  buyio-order-service:
+    build: ../buyio-order-service
+    container_name: buyio-order-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/db_buyio_order
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - postgres-order
+      - kafka
+
+  buyio-audit-service:
+    build: ../buyio-audit-service
+    container_name: buyio-audit-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-audit:5432/db_buyio_audit
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - postgres-audit
+      - kafka
+      
+  # Frontend Service
+  buyio-frontend:
+    build: ../buyio-frontend
+    container_name: buyio-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - buyio-auth-service
+      - buyio-catalog-service
+      - buyio-order-service
+
+volumes:
+  auth_db_data:
+  catalog_db_data:
+  order_db_data:
+  audit_db_data:
