@@ -13,6 +13,11 @@ services:
       - "5432:5432"
     volumes:
       - auth_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buyio_user -d db_buyio_auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Base de Datos de Catálogos
   postgres-catalog:
@@ -26,6 +31,11 @@ services:
       - "5433:5432"
     volumes:
       - catalog_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buyio_user -d db_buyio_catalog"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Base de Datos de Órdenes
   postgres-order:
@@ -39,6 +49,11 @@ services:
       - "5434:5432"
     volumes:
       - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buyio_user -d db_buyio_order"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Base de Datos de Auditoría
   postgres-audit:
@@ -52,6 +67,11 @@ services:
       - "5435:5432"
     volumes:
       - audit_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buyio_user -d db_buyio_audit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Messaging - Kafka Cluster
   zookeeper:
@@ -84,10 +104,14 @@ services:
       - "8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/db_buyio_auth
+      SPRING_DATASOURCE_USERNAME: buyio_user
+      SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
-      - postgres-auth
-      - kafka
+      postgres-auth:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   buyio-catalog-service:
     build: ../buyio-catalog-service
@@ -96,10 +120,14 @@ services:
       - "8082:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-catalog:5432/db_buyio_catalog
+      SPRING_DATASOURCE_USERNAME: buyio_user
+      SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
-      - postgres-catalog
-      - kafka
+      postgres-catalog:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   buyio-order-service:
     build: ../buyio-order-service
@@ -108,10 +136,14 @@ services:
       - "8083:8083"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/db_buyio_order
+      SPRING_DATASOURCE_USERNAME: buyio_user
+      SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
-      - postgres-order
-      - kafka
+      postgres-order:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   buyio-audit-service:
     build: ../buyio-audit-service
@@ -120,11 +152,32 @@ services:
       - "8084:8084"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-audit:5432/db_buyio_audit
+      SPRING_DATASOURCE_USERNAME: buyio_user
+      SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
-      - postgres-audit
-      - kafka
-      
+      postgres-audit:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  # API Gateway Service
+  api-gateway:
+    build: ../buyio-api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH_SERVICE_URL: http://buyio-auth-service:8081
+      CATALOG_SERVICE_URL: http://buyio-catalog-service:8082
+      ORDER_SERVICE_URL: http://buyio-order-service:8083
+      AUDIT_SERVICE_URL: http://buyio-audit-service:8084
+    depends_on:
+      - buyio-auth-service
+      - buyio-catalog-service
+      - buyio-order-service
+      - buyio-audit-service
+
   # Frontend Service
   buyio-frontend:
     build: ../buyio-frontend
@@ -132,9 +185,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - buyio-auth-service
-      - buyio-catalog-service
-      - buyio-order-service
+      - api-gateway
 
 volumes:
   auth_db_data:
