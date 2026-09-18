@@ -18,6 +18,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 150M
 
   # Base de Datos de Catálogos
   postgres-catalog:
@@ -36,6 +40,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 150M
 
   # Base de Datos de Órdenes
   postgres-order:
@@ -54,6 +62,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 150M
 
   # Base de Datos de Auditoría
   postgres-audit:
@@ -72,6 +84,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 150M
 
   # Messaging - Kafka Cluster
   zookeeper:
@@ -80,6 +96,12 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_JVM_PERFORMANCE_OPTS: "-Xmx200m -Xms150m"
+    deploy:
+      resources:
+        limits:
+          memory: 300M 
+          cpus: '0.25'
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -95,6 +117,11 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xmx350m -Xms350m" # KAFKA consume mucha RAM por defecto, bájalo aquí
+    deploy:
+      resources:
+        limits:
+          memory: 500M
 
   # Backend Services
   buyio-auth-service:
@@ -107,6 +134,12 @@ services:
       SPRING_DATASOURCE_USERNAME: buyio_user
       SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JAVA_OPTS: "-Xmx400m -Xms250m" 
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+          cpus: '0.50'          
     depends_on:
       postgres-auth:
         condition: service_healthy
@@ -123,6 +156,12 @@ services:
       SPRING_DATASOURCE_USERNAME: buyio_user
       SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JAVA_OPTS: "-Xmx400m -Xms250m" 
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+          cpus: '0.50'
     depends_on:
       postgres-catalog:
         condition: service_healthy
@@ -139,6 +178,12 @@ services:
       SPRING_DATASOURCE_USERNAME: buyio_user
       SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JAVA_OPTS: "-Xmx400m -Xms250m" 
+    deploy:
+      resources:
+        limits:
+          memory: 600M 
+          cpus: '0.50'
     depends_on:
       postgres-order:
         condition: service_healthy
@@ -155,6 +200,12 @@ services:
       SPRING_DATASOURCE_USERNAME: buyio_user
       SPRING_DATASOURCE_PASSWORD: buyio_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JAVA_OPTS: "-Xmx400m -Xms250m" 
+    deploy:
+      resources:
+        limits:
+          memory: 600M 
+          cpus: '0.50'
     depends_on:
       postgres-audit:
         condition: service_healthy
@@ -172,6 +223,12 @@ services:
       CATALOG_SERVICE_URL: http://buyio-catalog-service:8082
       ORDER_SERVICE_URL: http://buyio-order-service:8083
       AUDIT_SERVICE_URL: http://buyio-audit-service:8084
+      JAVA_OPTS: "-Xmx400m -Xms250m" 
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+          cpus: '0.50'
     depends_on:
       - buyio-auth-service
       - buyio-catalog-service
