@@ -95,7 +95,7 @@ graph TD
 4. **Trazabilidad Asíncrona vía Kafka:** Tras confirmar la transacción relacional, el servicio emite un evento de dominio (`OrderEvents`) hacia Apache Kafka. El microservicio `buyio-audit-service` consume estos mensajes de forma descolada y asíncrona, registrando el historial unificado y no mutable de cambios en `buyio_audit_db`.
 
 
-## Mapa de Relaciones Lógicas
+## Modelo de Datos (Entidad-Relación)
 
 ```mermaid
 erDiagram
@@ -146,7 +146,7 @@ erDiagram
     ORDERS {
         BIGINT id PK
         VARCHAR order_number UK
-        BIGINT supplier_id "FK Lógica -> SUPPLIERS"
+        BIGINT supplier_id "FK Logica -> SUPPLIERS"
         NUMERIC total_amount
         VARCHAR status "ESTADO (CREATED/CANCELLED/COMPLETED)"
         TIMESTAMP created_at "BITÁCORA"
@@ -156,7 +156,7 @@ erDiagram
     ORDER_ITEMS {
         BIGINT id PK
         BIGINT order_id FK
-        BIGINT product_id "FK Lógica -> PRODUCTS"
+        BIGINT product_id "FK Logica -> PRODUCTS"
         INTEGER quantity
         NUMERIC unit_price
         NUMERIC subtotal
@@ -175,14 +175,14 @@ erDiagram
         TIMESTAMP created_at "BITÁCORA"
     }
 
-    %% Relaciones Física dentro de buyio-catalog-service
+    %% Relaciones Fisica dentro de buyio-catalog-service
     SUPPLIERS ||--o{ PRODUCTS : "provee"
     CATEGORIES ||--o{ PRODUCTS : "clasifica"
 
-    %% Relación Física dentro de buyio-order-service (1 a Muchos)
+    %% Relacion Fisica dentro de buyio-order-service (1 a Muchos)
     ORDERS ||--|{ ORDER_ITEMS : "contiene"
 
-    %% Relaciones Lógicas entre dominios
+    %% Relaciones Logicas entre dominios
     SUPPLIERS ..o{ ORDERS : "referencia_logica (supplier_id)"
     PRODUCTS ..o{ ORDER_ITEMS : "referencia_logica (product_id)"
 ```
