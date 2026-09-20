@@ -82,3 +82,12 @@ graph TD
     class Kafka,AuditService auditStyle;
     class AuthDB,OrderDB,CatalogDB,AuditDB dbStyle;
 ```
+
+Flujo Técnico de la Arquitectura
+Intercepción y Validación JWT: Toda solicitud originada en el cliente React ingresa por buyio-api-gateway. El filtro customizado JwtAuthenticationFilter extrae el token del header Authorization: Bearer <token> e interactúa con buyio-auth-service para verificar su firma, vigencia y autoridades antes de dar paso a los servicios internos. Si el token es inválido o no está presente, se retorna de forma inmediata una respuesta 401 Unauthorized.
+
+Procesamiento de Órdenes de Compra: Una vez autorizada la solicitud, el Gateway la enruta hacia OrderController dentro de buyio-order-service. La capa de servicio (OrderService) ejecuta la lógica transaccional, aplicando anulación lógica (soft delete) cambiando el campo de estado de la orden en lugar de realizar una eliminación física (DELETE).
+
+Persistencia Relacional y Auditoría de Fechas: Las entidades JPA gestionadas mediante OrderRepository mapean las relaciones clave con productos/proveedores y ejecutan el guardado en la base de datos PostgreSQL correspondiente (buyio_order_db). Cada tabla garantiza la bitácora obligatoria mediante las anotaciones de auditoría JPA (@CreatedDate / @LastModifiedDate) asignando automáticamente created_at y updated_at.
+
+Trazabilidad Asíncrona vía Kafka: Tras confirmar la transacción relacional, el servicio emite un evento de dominio (OrderEvents) hacia Apache Kafka. El microservicio buyio-audit-service consume estos mensajes de forma descolada y asíncrona, registrando el historial unificado y no mutable de cambios en buyio_audit_db.
