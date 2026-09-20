@@ -175,14 +175,14 @@ erDiagram
         TIMESTAMP created_at "BITÁCORA"
     }
 
-    %% Relaciones Fisica dentro de buyio-catalog-service
+    %% Relaciones Fisicas dentro de buyio-catalog-service
     SUPPLIERS ||--o{ PRODUCTS : "provee"
     CATEGORIES ||--o{ PRODUCTS : "clasifica"
 
     %% Relacion Fisica dentro de buyio-order-service (1 a Muchos)
     ORDERS ||--|{ ORDER_ITEMS : "contiene"
 
-    %% Relaciones Logicas entre dominios
-    SUPPLIERS ..o{ ORDERS : "referencia_logica (supplier_id)"
-    PRODUCTS ..o{ ORDER_ITEMS : "referencia_logica (product_id)"
+    %% Relaciones Logicas entre dominios (Corregidas para compatibilidad de GitHub)
+    SUPPLIERS ||--o{ ORDERS : "ref_logica_supplier_id"
+    PRODUCTS ||--o{ ORDER_ITEMS : "ref_logica_product_id"
 ```
