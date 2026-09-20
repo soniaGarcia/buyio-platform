@@ -83,6 +83,7 @@ graph TD
     class AuthDB,OrderDB,CatalogDB,AuditDB dbStyle;
 ```
 
+
 ## Flujo Técnico de la Arquitectura
 
 1. **Intercepción y Validación JWT:** Toda solicitud originada en el cliente React ingresa por `buyio-api-gateway`. El filtro customizado `JwtAuthenticationFilter` extrae el token del header `Authorization: Bearer <token>` e interactúa con `buyio-auth-service` para verificar su firma, vigencia y autoridades antes de dar paso a los servicios internos. Si el token es inválido o no está presente, se retorna de forma inmediata una respuesta `401 Unauthorized`.
