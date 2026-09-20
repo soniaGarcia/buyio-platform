@@ -1,5 +1,5 @@
 # buyio-platform
-
+```mermaid
 graph TD
     %% Capa Cliente
     subgraph Client_Layer ["Capa de Presentación (Frontend)"]
@@ -80,3 +80,4 @@ graph TD
     class OrderCtrl,OrderSvc,OrderRepo,CatalogCtrl,CatalogSvc,CatalogRepo businessStyle;
     class Kafka,AuditService auditStyle;
     class AuthDB,OrderDB,CatalogDB,AuditDB dbStyle;
+    ```
